@@ -52,4 +52,4 @@ sort_commits = "oldest"
 
 [remote.github]
 owner = "debba"
-repo = "tabularis-plugin-clickhouse"
+repo = "tabularis-clickhouseplugin"
