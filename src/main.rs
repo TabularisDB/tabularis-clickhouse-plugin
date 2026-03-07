@@ -504,10 +504,8 @@ async fn query_json_rows(
     client: &Client,
     sql: &str,
 ) -> Result<(Vec<String>, Vec<Vec<JsonValue>>), String> {
-    let query_with_format = format!("{} FORMAT JSONEachRow", sql);
-
     let mut cursor = client
-        .query(&query_with_format)
+        .query(sql)
         .fetch_bytes("JSONEachRow")
         .map_err(|e| e.to_string())?;
 
@@ -823,10 +821,8 @@ async fn execute_query(
         q.to_string()
     };
 
-    let query_with_format = format!("{} FORMAT JSONEachRow", paged_sql);
-
     let mut cursor = client
-        .query(&query_with_format)
+        .query(&paged_sql)
         .fetch_bytes("JSONEachRow")
         .map_err(|e| e.to_string())?;
 
