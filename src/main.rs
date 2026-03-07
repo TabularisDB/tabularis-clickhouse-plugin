@@ -145,6 +145,61 @@ fn main() {
                     Err(e) => send_error(&mut stdout, id, -32007, &e),
                 }
             }
+            "create_view" => {
+                let schema = params
+                    .get("schema")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or(&db)
+                    .to_string();
+                let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+                let definition = params.get("definition").and_then(|d| d.as_str()).unwrap_or("");
+                let sql = format!(
+                    "CREATE VIEW `{}`.`{}` AS {}",
+                    escape_identifier(&schema),
+                    escape_identifier(name),
+                    definition
+                );
+                match rt.block_on(execute_statement(&client, &sql)) {
+                    Ok(_) => send_success(&mut stdout, id, json!(null)),
+                    Err(e) => send_error(&mut stdout, id, -32000, &e),
+                }
+            }
+            "alter_view" => {
+                let schema = params
+                    .get("schema")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or(&db)
+                    .to_string();
+                let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+                let definition = params.get("definition").and_then(|d| d.as_str()).unwrap_or("");
+                let sql = format!(
+                    "CREATE OR REPLACE VIEW `{}`.`{}` AS {}",
+                    escape_identifier(&schema),
+                    escape_identifier(name),
+                    definition
+                );
+                match rt.block_on(execute_statement(&client, &sql)) {
+                    Ok(_) => send_success(&mut stdout, id, json!(null)),
+                    Err(e) => send_error(&mut stdout, id, -32000, &e),
+                }
+            }
+            "drop_view" => {
+                let schema = params
+                    .get("schema")
+                    .and_then(|s| s.as_str())
+                    .unwrap_or(&db)
+                    .to_string();
+                let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+                let sql = format!(
+                    "DROP VIEW `{}`.`{}`",
+                    escape_identifier(&schema),
+                    escape_identifier(name)
+                );
+                match rt.block_on(execute_statement(&client, &sql)) {
+                    Ok(_) => send_success(&mut stdout, id, json!(null)),
+                    Err(e) => send_error(&mut stdout, id, -32000, &e),
+                }
+            }
             "get_routines" | "get_routine_parameters" => {
                 send_success(&mut stdout, id, json!([]));
             }
@@ -159,7 +214,7 @@ fn main() {
             "execute_query" => {
                 let query = params.get("query").and_then(|q| q.as_str()).unwrap_or("");
                 let limit = params
-                    .get("limit")
+                    .get("page_size")
                     .and_then(|l| l.as_u64())
                     .map(|l| l as u32);
                 let page = params
@@ -197,15 +252,15 @@ fn main() {
                     .to_string();
                 let table = params.get("table").and_then(|t| t.as_str()).unwrap_or("");
                 let pk_col = params
-                    .get("pk_col")
+                    .get("primary_key_column")
                     .and_then(|p| p.as_str())
                     .unwrap_or("");
-                let pk_val = params.get("pk_val").cloned().unwrap_or(JsonValue::Null);
+                let pk_val = params.get("primary_key_value").cloned().unwrap_or(JsonValue::Null);
                 let col_name = params
-                    .get("col_name")
+                    .get("column")
                     .and_then(|c| c.as_str())
                     .unwrap_or("");
-                let new_val = params.get("new_val").cloned().unwrap_or(JsonValue::Null);
+                let new_val = params.get("value").cloned().unwrap_or(JsonValue::Null);
                 match rt.block_on(update_record(
                     &client, &schema, table, pk_col, &pk_val, col_name, &new_val,
                 )) {
@@ -221,10 +276,10 @@ fn main() {
                     .to_string();
                 let table = params.get("table").and_then(|t| t.as_str()).unwrap_or("");
                 let pk_col = params
-                    .get("pk_col")
+                    .get("primary_key_column")
                     .and_then(|p| p.as_str())
                     .unwrap_or("");
-                let pk_val = params.get("pk_val").cloned().unwrap_or(JsonValue::Null);
+                let pk_val = params.get("primary_key_value").cloned().unwrap_or(JsonValue::Null);
                 match rt.block_on(delete_record(&client, &schema, table, pk_col, &pk_val)) {
                     Ok(n) => send_success(&mut stdout, id, json!(n)),
                     Err(e) => send_error(&mut stdout, id, -32015, &e),
@@ -448,11 +503,12 @@ fn get_or_create_client<'a>(
     params: &JsonValue,
 ) -> &'a Client {
     let key = format!(
-        "{}:{}:{}:{}",
+        "{}:{}:{}:{}:{}",
         params.get("host").and_then(|h| h.as_str()).unwrap_or("localhost"),
         params.get("port").and_then(|p| p.as_u64()).unwrap_or(8123),
         params.get("database").and_then(|d| d.as_str()).unwrap_or("default"),
         params.get("username").and_then(|u| u.as_str()).unwrap_or("default"),
+        params.get("password").and_then(|p| p.as_str()).unwrap_or(""),
     );
 
     if !clients.contains_key(&key) {
@@ -630,10 +686,10 @@ async fn get_columns(client: &Client, database: &str, table: &str) -> Result<Jso
             json!({
                 "name": name,
                 "data_type": data_type,
-                "is_pk": is_pk,
+                "is_primary_key": is_pk,
                 "is_nullable": is_nullable,
                 "is_auto_increment": false,
-                "default_value": if default_kind.is_empty() { JsonValue::Null } else { default_expr.into() },
+                "column_default": if default_kind.is_empty() { JsonValue::Null } else { default_expr.into() },
                 "comment": row.get(4).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()),
             })
         })
@@ -661,7 +717,7 @@ async fn get_indexes(client: &Client, database: &str, table: &str) -> Result<Jso
             let expr = row.get(1).and_then(|v| v.as_str()).unwrap_or("").to_string();
             let idx_type = row.get(2).and_then(|v| v.as_str()).unwrap_or("").to_string();
             json!({
-                "name": name,
+                "index_name": name,
                 "columns": [expr],
                 "is_unique": false,
                 "is_primary": false,
@@ -687,7 +743,7 @@ async fn get_indexes(client: &Client, database: &str, table: &str) -> Result<Jso
             indexes.insert(
                 0,
                 json!({
-                    "name": "PRIMARY",
+                    "index_name": "PRIMARY",
                     "columns": pk_cols,
                     "is_unique": true,
                     "is_primary": true,
@@ -791,10 +847,16 @@ async fn execute_query(
     }
 
     if has_format_clause(q) {
-        // User supplied their own FORMAT — return raw text
+        // User supplied their own FORMAT — strip it from the query and pass it
+        // to fetch_bytes to avoid the double-FORMAT conflict.
+        let upper = q.to_uppercase();
+        let (query_body, fmt) = match upper.rfind(" FORMAT ") {
+            Some(pos) => (&q[..pos], q[pos + 8..].trim()),
+            None => (q, "TSV"),
+        };
         let mut cursor = client
-            .query(q)
-            .fetch_bytes("TabSeparated")
+            .query(query_body)
+            .fetch_bytes(fmt)
             .map_err(|e| e.to_string())?;
         let mut all_bytes = Vec::new();
         while let Some(chunk) = cursor.next().await.map_err(|e| e.to_string())? {
@@ -904,8 +966,8 @@ async fn insert_record(
 
     let sql = format!(
         "INSERT INTO `{}`.`{}` ({}) VALUES ({})",
-        escape_string(database),
-        escape_string(table),
+        escape_identifier(database),
+        escape_identifier(table),
         columns.join(", "),
         values.join(", ")
     );
@@ -925,11 +987,11 @@ async fn update_record(
 ) -> Result<u64, String> {
     let sql = format!(
         "ALTER TABLE `{}`.`{}` UPDATE `{}` = {} WHERE `{}` = {}",
-        escape_string(database),
-        escape_string(table),
-        escape_string(col_name),
+        escape_identifier(database),
+        escape_identifier(table),
+        escape_identifier(col_name),
         format_value_for_sql(new_val),
-        escape_string(pk_col),
+        escape_identifier(pk_col),
         format_value_for_sql(pk_val),
     );
 
@@ -946,9 +1008,9 @@ async fn delete_record(
 ) -> Result<u64, String> {
     let sql = format!(
         "DELETE FROM `{}`.`{}` WHERE `{}` = {}",
-        escape_string(database),
-        escape_string(table),
-        escape_string(pk_col),
+        escape_identifier(database),
+        escape_identifier(table),
+        escape_identifier(pk_col),
         format_value_for_sql(pk_val),
     );
 
@@ -964,9 +1026,9 @@ async fn drop_index(
 ) -> Result<(), String> {
     let sql = format!(
         "ALTER TABLE `{}`.`{}` DROP INDEX `{}`",
-        escape_string(database),
-        escape_string(table),
-        escape_string(index_name),
+        escape_identifier(database),
+        escape_identifier(table),
+        escape_identifier(index_name),
     );
     execute_statement(client, &sql).await
 }
@@ -979,22 +1041,20 @@ async fn get_schema_snapshot(client: &Client, database: &str) -> Result<JsonValu
     let tables_val = get_tables(client, database).await?;
     let tables = tables_val.as_array().cloned().unwrap_or_default();
 
-    let mut snapshots = Vec::new();
+    let mut columns_map = serde_json::Map::new();
     for table in &tables {
         let name = table["name"].as_str().unwrap_or("").to_string();
-        let columns = get_columns(client, database, &name)
+        let cols = get_columns(client, database, &name)
             .await
             .unwrap_or(json!([]));
-        snapshots.push(json!({
-            "name": name,
-            "schema": database,
-            "comment": table.get("comment"),
-            "columns": columns,
-            "foreign_keys": [],
-        }));
+        columns_map.insert(name, cols);
     }
 
-    Ok(json!(snapshots))
+    Ok(json!({
+        "tables": tables,
+        "columns": columns_map,
+        "foreign_keys": {},
+    }))
 }
 
 async fn get_all_columns_batch(client: &Client, database: &str) -> Result<JsonValue, String> {
@@ -1021,10 +1081,10 @@ async fn get_all_columns_batch(client: &Client, database: &str) -> Result<JsonVa
         let col = json!({
             "name": name,
             "data_type": data_type,
-            "is_pk": is_pk,
+            "is_primary_key": is_pk,
             "is_nullable": is_nullable,
             "is_auto_increment": false,
-            "default_value": if default_kind.is_empty() { JsonValue::Null } else { default_expr.into() },
+            "column_default": if default_kind.is_empty() { JsonValue::Null } else { default_expr.into() },
             "comment": row.get(5).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()),
         });
 
@@ -1046,8 +1106,8 @@ async fn get_create_table_sql(
 ) -> Result<JsonValue, String> {
     let sql = format!(
         "SHOW CREATE TABLE `{}`.`{}`",
-        escape_string(database),
-        escape_string(table_name)
+        escape_identifier(database),
+        escape_identifier(table_name)
     );
     let (_, rows) = query_json_rows(client, &sql).await?;
 
@@ -1058,7 +1118,7 @@ async fn get_create_table_sql(
         .unwrap_or("")
         .to_string();
 
-    Ok(json!([ddl]))
+    Ok(json!(ddl))
 }
 
 // ---------------------------------------------------------------------------
@@ -1066,7 +1126,11 @@ async fn get_create_table_sql(
 // ---------------------------------------------------------------------------
 
 fn escape_string(s: &str) -> String {
-    s.replace('\'', "\\'").replace('\\', "\\\\")
+    s.replace('\\', "\\\\").replace('\'', "\\'")
+}
+
+fn escape_identifier(s: &str) -> String {
+    s.replace('`', "``")
 }
 
 fn format_value_for_sql(val: &JsonValue) -> String {

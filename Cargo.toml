@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
 clickhouse = { version = "0.13", features = ["rustls-tls"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
 log = "0.4"
