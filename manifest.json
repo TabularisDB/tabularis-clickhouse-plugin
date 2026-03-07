@@ -14,37 +14,197 @@
     "alter_primary_key": false
   },
   "data_types": [
-    { "name": "String", "category": "string", "requires_length": false, "requires_precision": false },
-    { "name": "FixedString", "category": "string", "requires_length": true, "requires_precision": false },
-    { "name": "Int8", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Int16", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Int32", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Int64", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Int128", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Int256", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "UInt8", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "UInt16", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "UInt32", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "UInt64", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "UInt128", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "UInt256", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Float32", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Float64", "category": "numeric", "requires_length": false, "requires_precision": false },
-    { "name": "Decimal", "category": "numeric", "requires_length": false, "requires_precision": true },
-    { "name": "Boolean", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "Date", "category": "date", "requires_length": false, "requires_precision": false },
-    { "name": "Date32", "category": "date", "requires_length": false, "requires_precision": false },
-    { "name": "DateTime", "category": "date", "requires_length": false, "requires_precision": false },
-    { "name": "DateTime64", "category": "date", "requires_length": false, "requires_precision": true },
-    { "name": "UUID", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "Array", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "Tuple", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "Map", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "Nullable", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "LowCardinality", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "Enum8", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "Enum16", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "IPv4", "category": "other", "requires_length": false, "requires_precision": false },
-    { "name": "IPv6", "category": "other", "requires_length": false, "requires_precision": false }
+    {
+      "name": "String",
+      "category": "string",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "FixedString",
+      "category": "string",
+      "requires_length": true,
+      "requires_precision": false
+    },
+    {
+      "name": "Int8",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Int16",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Int32",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Int64",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Int128",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Int256",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "UInt8",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "UInt16",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "UInt32",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "UInt64",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "UInt128",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "UInt256",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Float32",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Float64",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Decimal",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": true
+    },
+    {
+      "name": "Boolean",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Date",
+      "category": "date",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Date32",
+      "category": "date",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "DateTime",
+      "category": "date",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "DateTime64",
+      "category": "date",
+      "requires_length": false,
+      "requires_precision": true
+    },
+    {
+      "name": "UUID",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Array",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Tuple",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Map",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Nullable",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "LowCardinality",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Enum8",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "Enum16",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "IPv4",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "IPv6",
+      "category": "other",
+      "requires_length": false,
+      "requires_precision": false
+    }
   ]
 }
