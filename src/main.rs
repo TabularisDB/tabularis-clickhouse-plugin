@@ -127,7 +127,7 @@ fn main() {
                     .and_then(|s| s.as_str())
                     .unwrap_or(&db)
                     .to_string();
-                let view = params.get("view").and_then(|v| v.as_str()).unwrap_or("");
+                let view = params.get("view_name").and_then(|v| v.as_str()).unwrap_or("");
                 match rt.block_on(get_view_definition(&client, &schema, view)) {
                     Ok(v) => send_success(&mut stdout, id, v),
                     Err(e) => send_error(&mut stdout, id, -32006, &e),
@@ -139,7 +139,7 @@ fn main() {
                     .and_then(|s| s.as_str())
                     .unwrap_or(&db)
                     .to_string();
-                let view = params.get("view").and_then(|v| v.as_str()).unwrap_or("");
+                let view = params.get("view_name").and_then(|v| v.as_str()).unwrap_or("");
                 match rt.block_on(get_columns(&client, &schema, view)) {
                     Ok(v) => send_success(&mut stdout, id, v),
                     Err(e) => send_error(&mut stdout, id, -32007, &e),
@@ -151,7 +151,7 @@ fn main() {
                     .and_then(|s| s.as_str())
                     .unwrap_or(&db)
                     .to_string();
-                let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+                let name = params.get("view_name").and_then(|n| n.as_str()).unwrap_or("");
                 let definition = params.get("definition").and_then(|d| d.as_str()).unwrap_or("");
                 let sql = format!(
                     "CREATE VIEW `{}`.`{}` AS {}",
@@ -170,7 +170,7 @@ fn main() {
                     .and_then(|s| s.as_str())
                     .unwrap_or(&db)
                     .to_string();
-                let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+                let name = params.get("view_name").and_then(|n| n.as_str()).unwrap_or("");
                 let definition = params.get("definition").and_then(|d| d.as_str()).unwrap_or("");
                 let sql = format!(
                     "CREATE OR REPLACE VIEW `{}`.`{}` AS {}",
@@ -189,7 +189,7 @@ fn main() {
                     .and_then(|s| s.as_str())
                     .unwrap_or(&db)
                     .to_string();
-                let name = params.get("name").and_then(|n| n.as_str()).unwrap_or("");
+                let name = params.get("view_name").and_then(|n| n.as_str()).unwrap_or("");
                 let sql = format!(
                     "DROP VIEW `{}`.`{}`",
                     escape_identifier(&schema),
@@ -214,7 +214,7 @@ fn main() {
             "execute_query" => {
                 let query = params.get("query").and_then(|q| q.as_str()).unwrap_or("");
                 let limit = params
-                    .get("page_size")
+                    .get("limit")
                     .and_then(|l| l.as_u64())
                     .map(|l| l as u32);
                 let page = params
@@ -252,15 +252,15 @@ fn main() {
                     .to_string();
                 let table = params.get("table").and_then(|t| t.as_str()).unwrap_or("");
                 let pk_col = params
-                    .get("primary_key_column")
+                    .get("pk_col")
                     .and_then(|p| p.as_str())
                     .unwrap_or("");
-                let pk_val = params.get("primary_key_value").cloned().unwrap_or(JsonValue::Null);
+                let pk_val = params.get("pk_val").cloned().unwrap_or(JsonValue::Null);
                 let col_name = params
-                    .get("column")
+                    .get("col_name")
                     .and_then(|c| c.as_str())
                     .unwrap_or("");
-                let new_val = params.get("value").cloned().unwrap_or(JsonValue::Null);
+                let new_val = params.get("new_val").cloned().unwrap_or(JsonValue::Null);
                 match rt.block_on(update_record(
                     &client, &schema, table, pk_col, &pk_val, col_name, &new_val,
                 )) {
@@ -276,10 +276,10 @@ fn main() {
                     .to_string();
                 let table = params.get("table").and_then(|t| t.as_str()).unwrap_or("");
                 let pk_col = params
-                    .get("primary_key_column")
+                    .get("pk_col")
                     .and_then(|p| p.as_str())
                     .unwrap_or("");
-                let pk_val = params.get("primary_key_value").cloned().unwrap_or(JsonValue::Null);
+                let pk_val = params.get("pk_val").cloned().unwrap_or(JsonValue::Null);
                 match rt.block_on(delete_record(&client, &schema, table, pk_col, &pk_val)) {
                     Ok(n) => send_success(&mut stdout, id, json!(n)),
                     Err(e) => send_error(&mut stdout, id, -32015, &e),
@@ -320,10 +320,9 @@ fn main() {
                     .get("table_name")
                     .and_then(|t| t.as_str())
                     .unwrap_or("");
-                match rt.block_on(get_create_table_sql(&client, &schema, table_name)) {
-                    Ok(v) => send_success(&mut stdout, id, v),
-                    Err(e) => send_error(&mut stdout, id, -32018, &e),
-                }
+                let columns = params.get("columns").and_then(|c| c.as_array()).cloned().unwrap_or_default();
+                let sql = generate_create_table_sql(&schema, table_name, &columns);
+                send_success(&mut stdout, id, json!([sql]));
             }
             "get_add_column_sql" => {
                 let schema = params
@@ -686,10 +685,10 @@ async fn get_columns(client: &Client, database: &str, table: &str) -> Result<Jso
             json!({
                 "name": name,
                 "data_type": data_type,
-                "is_primary_key": is_pk,
+                "is_pk": is_pk,
                 "is_nullable": is_nullable,
                 "is_auto_increment": false,
-                "column_default": if default_kind.is_empty() { JsonValue::Null } else { default_expr.into() },
+                "default_value": if default_kind.is_empty() { JsonValue::Null } else { default_expr.map(JsonValue::String).unwrap_or(JsonValue::Null) },
                 "comment": row.get(4).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()),
             })
         })
@@ -717,10 +716,11 @@ async fn get_indexes(client: &Client, database: &str, table: &str) -> Result<Jso
             let expr = row.get(1).and_then(|v| v.as_str()).unwrap_or("").to_string();
             let idx_type = row.get(2).and_then(|v| v.as_str()).unwrap_or("").to_string();
             json!({
-                "index_name": name,
-                "columns": [expr],
+                "name": name,
+                "column_name": expr,
                 "is_unique": false,
                 "is_primary": false,
+                "seq_in_index": 1,
                 "index_type": idx_type,
             })
         })
@@ -736,20 +736,20 @@ async fn get_indexes(client: &Client, database: &str, table: &str) -> Result<Jso
     );
     if let Ok((_, pk_rows)) = query_json_rows(client, &pk_sql).await {
         if !pk_rows.is_empty() {
-            let pk_cols: Vec<String> = pk_rows
-                .iter()
-                .filter_map(|row| row.first().and_then(|v| v.as_str()).map(|s| s.to_string()))
-                .collect();
-            indexes.insert(
-                0,
-                json!({
-                    "index_name": "PRIMARY",
-                    "columns": pk_cols,
-                    "is_unique": true,
-                    "is_primary": true,
-                    "index_type": "primary",
-                }),
-            );
+            for (i, row) in pk_rows.iter().enumerate() {
+                let col = row.first().and_then(|v| v.as_str()).unwrap_or("").to_string();
+                indexes.insert(
+                    i,
+                    json!({
+                        "name": "PRIMARY",
+                        "column_name": col,
+                        "is_unique": true,
+                        "is_primary": true,
+                        "seq_in_index": (i + 1) as i32,
+                        "index_type": "primary",
+                    }),
+                );
+            }
         }
     }
 
@@ -1041,20 +1041,20 @@ async fn get_schema_snapshot(client: &Client, database: &str) -> Result<JsonValu
     let tables_val = get_tables(client, database).await?;
     let tables = tables_val.as_array().cloned().unwrap_or_default();
 
-    let mut columns_map = serde_json::Map::new();
+    let mut snapshots = Vec::new();
     for table in &tables {
         let name = table["name"].as_str().unwrap_or("").to_string();
-        let cols = get_columns(client, database, &name)
+        let columns = get_columns(client, database, &name)
             .await
             .unwrap_or(json!([]));
-        columns_map.insert(name, cols);
+        snapshots.push(json!({
+            "name": name,
+            "columns": columns,
+            "foreign_keys": [],
+        }));
     }
 
-    Ok(json!({
-        "tables": tables,
-        "columns": columns_map,
-        "foreign_keys": {},
-    }))
+    Ok(json!(snapshots))
 }
 
 async fn get_all_columns_batch(client: &Client, database: &str) -> Result<JsonValue, String> {
@@ -1081,10 +1081,10 @@ async fn get_all_columns_batch(client: &Client, database: &str) -> Result<JsonVa
         let col = json!({
             "name": name,
             "data_type": data_type,
-            "is_primary_key": is_pk,
+            "is_pk": is_pk,
             "is_nullable": is_nullable,
             "is_auto_increment": false,
-            "column_default": if default_kind.is_empty() { JsonValue::Null } else { default_expr.into() },
+            "default_value": if default_kind.is_empty() { JsonValue::Null } else { default_expr.map(JsonValue::String).unwrap_or(JsonValue::Null) },
             "comment": row.get(5).and_then(|v| v.as_str()).filter(|s| !s.is_empty()).map(|s| s.to_string()),
         });
 
@@ -1099,26 +1099,47 @@ async fn get_all_columns_batch(client: &Client, database: &str) -> Result<JsonVa
     Ok(JsonValue::Object(result))
 }
 
-async fn get_create_table_sql(
-    client: &Client,
-    database: &str,
-    table_name: &str,
-) -> Result<JsonValue, String> {
-    let sql = format!(
-        "SHOW CREATE TABLE `{}`.`{}`",
-        escape_identifier(database),
-        escape_identifier(table_name)
-    );
-    let (_, rows) = query_json_rows(client, &sql).await?;
+fn generate_create_table_sql(schema: &str, table_name: &str, columns: &[JsonValue]) -> String {
+    let pk_cols: Vec<String> = columns
+        .iter()
+        .filter(|c| c.get("is_pk").and_then(|v| v.as_bool()).unwrap_or(false))
+        .filter_map(|c| c.get("name").and_then(|v| v.as_str()).map(|s| format!("`{}`", escape_identifier(s))))
+        .collect();
 
-    let ddl = rows
-        .first()
-        .and_then(|row| row.first())
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
+    let col_defs: Vec<String> = columns
+        .iter()
+        .map(|c| {
+            let name = c.get("name").and_then(|v| v.as_str()).unwrap_or("col");
+            let data_type = c.get("data_type").and_then(|v| v.as_str()).unwrap_or("String");
+            let nullable = c.get("is_nullable").and_then(|v| v.as_bool()).unwrap_or(false);
+            let ch_type = if nullable {
+                format!("Nullable({})", data_type)
+            } else {
+                data_type.to_string()
+            };
+            let default_part = c
+                .get("default_value")
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .map(|s| format!(" DEFAULT {}", s))
+                .unwrap_or_default();
+            format!("    `{}` {}{}", escape_identifier(name), ch_type, default_part)
+        })
+        .collect();
 
-    Ok(json!(ddl))
+    let order_by = if pk_cols.is_empty() {
+        "tuple()".to_string()
+    } else {
+        pk_cols.join(", ")
+    };
+
+    format!(
+        "CREATE TABLE `{}`.`{}` (\n{}\n) ENGINE = MergeTree()\nORDER BY ({});",
+        escape_identifier(schema),
+        escape_identifier(table_name),
+        col_defs.join(",\n"),
+        order_by,
+    )
 }
 
 // ---------------------------------------------------------------------------
