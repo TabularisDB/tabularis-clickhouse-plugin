@@ -8,7 +8,7 @@
 ![](https://img.shields.io/github/release/debba/tabularis-clickhouse-plugin.svg?style=flat)
 ![](https://img.shields.io/github/downloads/debba/tabularis-clickhouse-plugin/total.svg?style=flat)
 ![Build & Release](https://github.com/debba/tabularis-clickhouse-plugin/workflows/Release/badge.svg)
-[![Discord](https://img.shields.io/discord/1470772941296894128?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/YrZPHAwMSG)
+[![Discord](https://img.shields.io/discord/1470772941296894128?color=5865F2&logo=discord&logoColor=white)](https://discord.com/invite/K2hmhfHRSt)
 
 </p>
 
@@ -16,7 +16,7 @@ A [ClickHouse](https://clickhouse.com/) plugin for [Tabularis](https://github.co
 
 This plugin enables Tabularis to connect to any ClickHouse instance and provides table and view browsing, inline CRUD, index management, and SQL query execution through a JSON-RPC 2.0 over stdio interface.
 
-**Discord** - [Join our discord server](https://discord.gg/YrZPHAwMSG) and chat with the maintainers.
+**Discord** - [Join our discord server](https://discord.com/invite/K2hmhfHRSt) and chat with the maintainers.
 
 ## Table of Contents
 
