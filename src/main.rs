@@ -461,6 +461,13 @@ fn main() {
 // Connection management
 // ---------------------------------------------------------------------------
 
+/// Decide whether an `ssl_mode` value should enable HTTPS for the ClickHouse
+/// HTTP interface. Empty, `"disable"` and `"disabled"` mean plaintext HTTP;
+/// any other value (e.g. `"require"`) enables TLS.
+fn ssl_mode_enables_https(ssl_mode: &str) -> bool {
+    !matches!(ssl_mode, "" | "disable" | "disabled")
+}
+
 fn build_client(params: &JsonValue) -> Client {
     let host = params
         .get("host")
@@ -482,10 +489,32 @@ fn build_client(params: &JsonValue) -> Client {
         .get("password")
         .and_then(|p| p.as_str())
         .unwrap_or("");
-    let use_ssl = params
-        .get("ssl")
-        .and_then(|s| s.as_bool())
-        .unwrap_or(false);
+    // Tabularis forwards SSL configuration as `ssl_mode` (a string), matching the
+    // shared ConnectionParams contract — not a boolean `ssl` field. Any mode other
+    // than empty / "disable" / "disabled" enables HTTPS.
+    let ssl_mode = params
+        .get("ssl_mode")
+        .and_then(|m| m.as_str())
+        .unwrap_or("");
+    let use_ssl = ssl_mode_enables_https(ssl_mode);
+
+    // Custom CA / client certificates (ssl_ca, ssl_cert, ssl_key) are not yet wired
+    // into the rustls connector, which currently trusts the webpki root bundle
+    // (public CAs only). Warn so the behavior is explicit rather than silently
+    // ignored when a user provides certificate paths.
+    if use_ssl {
+        for key in ["ssl_ca", "ssl_cert", "ssl_key"] {
+            let provided = params
+                .get(key)
+                .and_then(|v| v.as_str())
+                .is_some_and(|v| !v.is_empty());
+            if provided {
+                eprintln!(
+                    "[clickhouse-plugin] warning: '{key}' is set but custom TLS certificates are not yet supported; using public root certificates only"
+                );
+            }
+        }
+    }
 
     let protocol = if use_ssl { "https" } else { "http" };
     let url = format!("{}://{}:{}", protocol, host, port);
@@ -501,13 +530,19 @@ fn get_or_create_client<'a>(
     clients: &'a mut HashMap<String, Client>,
     params: &JsonValue,
 ) -> &'a Client {
+    // Include SSL fields in the cache key so toggling SSL (or changing
+    // certificate paths) rebuilds the client instead of reusing a stale one.
     let key = format!(
-        "{}:{}:{}:{}:{}",
+        "{}:{}:{}:{}:{}:{}:{}:{}:{}",
         params.get("host").and_then(|h| h.as_str()).unwrap_or("localhost"),
         params.get("port").and_then(|p| p.as_u64()).unwrap_or(8123),
         params.get("database").and_then(|d| d.as_str()).unwrap_or("default"),
         params.get("username").and_then(|u| u.as_str()).unwrap_or("default"),
         params.get("password").and_then(|p| p.as_str()).unwrap_or(""),
+        params.get("ssl_mode").and_then(|m| m.as_str()).unwrap_or(""),
+        params.get("ssl_ca").and_then(|m| m.as_str()).unwrap_or(""),
+        params.get("ssl_cert").and_then(|m| m.as_str()).unwrap_or(""),
+        params.get("ssl_key").and_then(|m| m.as_str()).unwrap_or(""),
     );
 
     if !clients.contains_key(&key) {
@@ -1165,5 +1200,30 @@ fn format_value_for_sql(val: &JsonValue) -> String {
             format!("[{}]", items.join(", "))
         }
         JsonValue::Object(_) => format!("'{}'", escape_string(&val.to_string())),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ssl_mode_disabled_values_use_http() {
+        for mode in ["", "disable", "disabled"] {
+            assert!(
+                !ssl_mode_enables_https(mode),
+                "mode {mode:?} should not enable HTTPS"
+            );
+        }
+    }
+
+    #[test]
+    fn ssl_mode_enabled_values_use_https() {
+        for mode in ["require", "required", "prefer", "verify-full", "verify_ca"] {
+            assert!(
+                ssl_mode_enables_https(mode),
+                "mode {mode:?} should enable HTTPS"
+            );
+        }
     }
 }
