@@ -178,7 +178,7 @@ cargo run --bin test_plugin
 ### Manual JSON-RPC test via shell
 
 ```bash
-echo '{"jsonrpc":"2.0","method":"test_connection","params":{"params":{"host":"localhost","port":8123,"database":"default","username":"default","password":"","ssl":false}},"id":1}' \
+echo '{"jsonrpc":"2.0","method":"test_connection","params":{"params":{"host":"localhost","port":8123,"database":"default","username":"default","password":"","ssl_mode":"disable"}},"id":1}' \
   | ./target/release/tabularis-clickhouse-plugin
 ```
 

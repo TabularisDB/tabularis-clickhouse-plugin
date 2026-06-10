@@ -32,7 +32,7 @@ fn main() {
         "database": "default",
         "username": "default",
         "password": "",
-        "ssl": false
+        "ssl_mode": "disable"
     });
 
     let requests = vec![

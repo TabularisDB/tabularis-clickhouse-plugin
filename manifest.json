@@ -10,8 +10,10 @@
     "views": true,
     "routines": false,
     "file_based": false,
+    "folder_based": false,
     "identifier_quote": "`",
-    "alter_primary_key": false
+    "alter_primary_key": false,
+    "supports_ssl": true
   },
   "data_types": [
     {
