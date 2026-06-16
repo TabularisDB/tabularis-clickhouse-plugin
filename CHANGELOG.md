@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-06-16
+
+### Bug Fixes
+
+- *(ssl)* Read ssl_mode from connection params instead of boolean ssl by @Aditeya
+
+### Documentation
+
+- Fix Discord shields.io badge server id by @debba
+
+### Miscellaneous
+
+- Switch Discord invite URL to discord.com/invite/K2hmhfHRSt by @debba
 ## [0.1.0] - 2026-03-07
 
 ### Bug Fixes
