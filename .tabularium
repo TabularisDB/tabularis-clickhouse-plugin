@@ -1,6 +1,6 @@
 {
   "id": "clickhouse",
-  "name": "ClickHouse",
+  "name": "clickhouse",
   "version": "0.2.1",
   "description": "ClickHouse columnar OLAP database driver",
   "icon": "https://raw.githubusercontent.com/TabularisDB/tabularis-clickhouse-plugin/main/clickhouse-logo.png",
