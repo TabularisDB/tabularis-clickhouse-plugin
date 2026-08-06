@@ -2,21 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.2.1] - 2026-08-06
+## [0.2.0] - 2026-08-06
 
 ### Bug Fixes
 
 - *(ci)* Upload the dotfile manifest artifact and attach it from artifacts by @debba
-
-### Features
-
-- Use a PNG icon in the manifest, keep the SVG source by @debba
-## [0.2.0] - 2026-08-06
+- *(manifest)* Lowercase plugin name to conform to the registry schema by @debba
 
 ### Features
 
 - Migrate to the .tabularium manifest for the Tabularium registry by @NewtTheWolf
 - Add plugin icon to the .tabularium manifest by @debba
+- Use a PNG icon in the manifest, keep the SVG source by @debba
 ## [0.1.1] - 2026-06-16
 
 ### Bug Fixes
