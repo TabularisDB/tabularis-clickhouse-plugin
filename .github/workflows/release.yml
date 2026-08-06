@@ -54,6 +54,7 @@ jobs:
         with:
           name: manifest
           path: .tabularium
+          include-hidden-files: true
 
       - name: Upload changelog as artifact
         uses: actions/upload-artifact@v4
@@ -146,8 +147,6 @@ jobs:
     needs: [prepare, build]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (for the .tabularium manifest asset)
-        uses: actions/checkout@v4
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
@@ -166,5 +165,5 @@ jobs:
           body_path: CHANGELOG.md
           files: |
             artifacts/*.zip
-            .tabularium
+            artifacts/.tabularium
           generate_release_notes: false
