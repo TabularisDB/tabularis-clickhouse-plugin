@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - *(ci)* Upload the dotfile manifest artifact and attach it from artifacts by @debba
 - *(manifest)* Lowercase plugin name to conform to the registry schema by @debba
+- *(manifest)* Conform to the registry driver-kind schema by @debba
 
 ### Features
 
