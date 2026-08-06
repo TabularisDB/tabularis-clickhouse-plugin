@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.0] - 2026-08-06
+
+### Features
+
+- Migrate to the .tabularium manifest for the Tabularium registry by @NewtTheWolf
+- Add plugin icon to the .tabularium manifest by @debba
 ## [0.1.1] - 2026-06-16
 
 ### Bug Fixes
