@@ -64,7 +64,7 @@ If your version of Tabularis supports plugin management, the ClickHouse plugin c
 
 1. Download the latest release for your platform from the [Releases page](https://github.com/debba/tabularis-clickhouse-plugin/releases).
 2. Extract the archive.
-3. Copy `tabularis-clickhouse-plugin` (or `tabularis-clickhouse-plugin.exe` on Windows) and `manifest.json` into the Tabularis plugins directory:
+3. Copy `tabularis-clickhouse-plugin` (or `tabularis-clickhouse-plugin.exe` on Windows) and `.tabularium` into the Tabularis plugins directory:
 
 | OS | Plugins Directory |
 |---|---|

@@ -3,6 +3,7 @@
   "name": "ClickHouse",
   "version": "0.1.1",
   "description": "ClickHouse columnar OLAP database driver",
+  "icon": "https://raw.githubusercontent.com/TabularisDB/tabularis-clickhouse-plugin/main/clickhouse-logo.svg",
   "default_port": 8123,
   "executable": "tabularis-clickhouse-plugin",
   "capabilities": {
