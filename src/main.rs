@@ -845,18 +845,49 @@ async fn get_view_definition(
 // Query execution
 // ---------------------------------------------------------------------------
 
-fn is_select_like(query: &str) -> bool {
-    let upper = query.trim().to_uppercase();
-    upper.starts_with("SELECT")
-        || upper.starts_with("SHOW")
-        || upper.starts_with("DESCRIBE")
-        || upper.starts_with("DESC ")
-        || upper.starts_with("EXPLAIN")
-        || upper.starts_with("WITH")
+fn query_keyword(query: &str) -> String {
+    query
+        .split_whitespace()
+        .next()
+        .unwrap_or_default()
+        .to_ascii_uppercase()
+}
+
+fn is_wrappable_query(query: &str) -> bool {
+    matches!(query_keyword(query).as_str(), "SELECT" | "WITH")
+}
+
+fn returns_rows(query: &str) -> bool {
+    matches!(
+        query_keyword(query).as_str(),
+        "SELECT" | "WITH" | "SHOW" | "DESCRIBE" | "DESC" | "EXPLAIN" | "EXISTS"
+    )
 }
 
 fn has_format_clause(query: &str) -> bool {
     query.to_uppercase().contains(" FORMAT ")
+}
+
+fn paged_query(query: &str, limit: Option<u32>, page: u32) -> (String, Option<u32>) {
+    if !is_wrappable_query(query) {
+        return (query.to_string(), None);
+    }
+    match limit {
+        Some(size) => {
+            let fetch_limit = size.saturating_add(1);
+            let offset = page.saturating_sub(1).saturating_mul(size);
+            (
+                format!(
+                    "SELECT * FROM ({}) LIMIT {} OFFSET {}",
+                    query.trim_end_matches(';'),
+                    fetch_limit,
+                    offset
+                ),
+                Some(fetch_limit),
+            )
+        }
+        None => (query.to_string(), None),
+    }
 }
 
 async fn execute_query(
@@ -868,7 +899,7 @@ async fn execute_query(
 ) -> Result<JsonValue, String> {
     let q = query.trim();
 
-    if !is_select_like(q) {
+    if !returns_rows(q) {
         // DDL / DML — execute and return an empty result set
         execute_statement(client, q).await?;
         return Ok(json!({
@@ -908,15 +939,10 @@ async fn execute_query(
         }));
     }
 
-    // Wrap with LIMIT/OFFSET for pagination
+    // Only SELECT and WITH are valid subquery sources. SHOW, DESCRIBE and
+    // other result-producing statements must be sent to ClickHouse directly.
     let page = if page == 0 { 1 } else { page };
-    let fetch_limit = limit.map(|l| l + 1);
-    let paged_sql = if let Some(l) = fetch_limit {
-        let offset = (page - 1) * limit.unwrap();
-        format!("SELECT * FROM ({}) LIMIT {} OFFSET {}", q, l, offset)
-    } else {
-        q.to_string()
-    };
+    let (paged_sql, fetch_limit) = paged_query(q, limit, page);
 
     let mut cursor = client
         .query(&paged_sql)
@@ -969,7 +995,7 @@ async fn execute_query(
         "affected_rows": 0,
         "truncated": has_more,
         "has_more": has_more,
-        "pagination": if limit.is_some() {
+        "pagination": if fetch_limit.is_some() {
             json!({
                 "page": page,
                 "page_size": limit.unwrap(),
@@ -1206,6 +1232,26 @@ fn format_value_for_sql(val: &JsonValue) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_select_and_with_are_wrapped_for_pagination() {
+        assert_eq!(
+            paged_query("SELECT n FROM t;", Some(25), 2),
+            ("SELECT * FROM (SELECT n FROM t) LIMIT 26 OFFSET 25".to_string(), Some(26))
+        );
+        assert_eq!(
+            paged_query("WITH x AS (SELECT 1) SELECT * FROM x", Some(10), 1),
+            ("SELECT * FROM (WITH x AS (SELECT 1) SELECT * FROM x) LIMIT 11 OFFSET 0".to_string(), Some(11))
+        );
+        for sql in ["SHOW DATABASES", "DESCRIBE TABLE t", "EXPLAIN SELECT 1", "EXISTS TABLE t"] {
+            assert!(returns_rows(sql));
+            assert_eq!(paged_query(sql, Some(500), 1), (sql.to_string(), None));
+        }
+        for sql in ["CREATE TABLE t (n UInt8)", "SYSTEM FLUSH LOGS"] {
+            assert!(!returns_rows(sql));
+        }
+        assert!(!returns_rows("SELECTED"));
+    }
 
     #[test]
     fn ssl_mode_disabled_values_use_http() {
