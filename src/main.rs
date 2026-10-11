@@ -1237,13 +1237,25 @@ mod tests {
     fn only_select_and_with_are_wrapped_for_pagination() {
         assert_eq!(
             paged_query("SELECT n FROM t;", Some(25), 2),
-            ("SELECT * FROM (SELECT n FROM t) LIMIT 26 OFFSET 25".to_string(), Some(26))
+            (
+                "SELECT * FROM (SELECT n FROM t) LIMIT 26 OFFSET 25".to_string(),
+                Some(26)
+            )
         );
         assert_eq!(
             paged_query("WITH x AS (SELECT 1) SELECT * FROM x", Some(10), 1),
-            ("SELECT * FROM (WITH x AS (SELECT 1) SELECT * FROM x) LIMIT 11 OFFSET 0".to_string(), Some(11))
+            (
+                "SELECT * FROM (WITH x AS (SELECT 1) SELECT * FROM x) LIMIT 11 OFFSET 0"
+                    .to_string(),
+                Some(11)
+            )
         );
-        for sql in ["SHOW DATABASES", "DESCRIBE TABLE t", "EXPLAIN SELECT 1", "EXISTS TABLE t"] {
+        for sql in [
+            "SHOW DATABASES",
+            "DESCRIBE TABLE t",
+            "EXPLAIN SELECT 1",
+            "EXISTS TABLE t",
+        ] {
             assert!(returns_rows(sql));
             assert_eq!(paged_query(sql, Some(500), 1), (sql.to_string(), None));
         }
