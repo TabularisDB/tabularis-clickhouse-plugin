@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.2] - 2026-10-12
+
+### Bug Fixes
+
+- *(client)* Disable native compression so reads work on ClickHouse 26.9 (#7) by @Badabum in [#7](https://github.com/TabularisDB/tabularis-clickhouse-plugin/pull/7)
+
+### Miscellaneous
+
+- Add CI and version suggestion workflows (#6) by @debba in [#6](https://github.com/TabularisDB/tabularis-clickhouse-plugin/pull/6)
 ## [0.2.1] - 2026-10-11
 
 ### Bug Fixes
