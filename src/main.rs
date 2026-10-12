@@ -1,4 +1,4 @@
-use clickhouse::Client;
+use clickhouse::{Client, Compression};
 use serde_json::{json, Value as JsonValue};
 use std::collections::HashMap;
 use std::io::{self, BufRead, Write};
@@ -538,11 +538,16 @@ fn build_client(params: &JsonValue) -> Client {
     let protocol = if use_ssl { "https" } else { "http" };
     let url = format!("{}://{}:{}", protocol, host, port);
 
+    // ClickHouse 26.9 frames `compress=1` responses with ZSTD (method byte 0x90),
+    // but the crate's LZ4 decoder only accepts 0x82 and fails every read with
+    // "incorrect magic number" (ClickHouse/clickhouse-rs#468). Disable native
+    // compression until a crate release handles it.
     Client::default()
         .with_url(&url)
         .with_user(username)
         .with_password(password)
         .with_database(database)
+        .with_compression(Compression::None)
 }
 
 fn get_or_create_client<'a>(
