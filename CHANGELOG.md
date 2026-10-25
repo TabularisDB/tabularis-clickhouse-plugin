@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.3] - 2026-10-25
+
+### Bug Fixes
+
+- *(deps)* Secure ClickHouse TLS and Tokio dependencies for 0.2.3 (#12) by @harshbhx in [#12](https://github.com/TabularisDB/tabularis-clickhouse-plugin/pull/12)
+
+### Documentation
+
+- Update Tabularis logo URL to packages/web-ui/public by @debba
+- Use Tabularis banner and add native support banner in README by @debba
 ## [0.2.2] - 2026-10-12
 
 ### Bug Fixes
