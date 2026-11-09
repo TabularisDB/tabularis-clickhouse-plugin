@@ -4,11 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [0.2.4] - 2026-11-09
 
-### Security
+### Bug Fixes
 
-- Upgrade Hyper to 1.12.0 to remove the unmaintained pin-utils dependency
-  (RUSTSEC-2026-0441, #13).
-
+- *(deps)* Remove unmaintained pin-utils for v0.2.4 by @debba
 ## [0.2.3] - 2026-10-25
 
 ### Bug Fixes
